@@ -36,3 +36,7 @@ USAGE.md
 *.lnk
 3RDPARTY.md
 .editorconfig
+limine-protocol/
+limine.cfg
+qemu_trace.log
+version.sh
