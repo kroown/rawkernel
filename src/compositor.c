@@ -560,8 +560,12 @@ static void render_window(window_t *win) {
     uint32_t *back = comp.back;
     int wx = win->x, wy = win->y, ww = win->width, wh = win->height;
 
-    uint32_t tb_col = (win == comp.active) ? 0x45475A : 0x302D41;
-    uint32_t close_col = 0xF38BA8;
+    draw_rect(back, wx + 5, wy + 5, ww, wh, 0x06060E);
+
+    uint32_t tb_col = (win == comp.active) ? 0x363950 : 0x262734;
+    uint32_t ac_col = (win == comp.active) ? 0x89B4FA : 0x45475A;
+    uint32_t close_bg = 0xF38BA8;
+    uint32_t close_x = 0x1E1E2E;
     int r = 4;
 
     for (int row = 0; row < wh; row++) {
@@ -576,13 +580,16 @@ static void render_window(window_t *win) {
                 int rx = ww - 1 - col;
                 if (lx < r && ly < r && lx * lx + ly * ly > r * r) { color = 0; }
                 else if (rx < r && ly < r && rx * rx + ly * ly > r * r) { color = 0; }
-                else {
+                else if (row < 2) {
+                    color = ac_col;
+                } else if (col >= ww - 28 && col < ww - 4 && row >= 6 && row < 22) {
+                    int cx = col - (ww - 28);
+                    if (cx == 0 || cx == 23 || row == 6 || row == 21) { color = 0; }
+                    else if (cx >= 2 && cx < 22 && row >= 8 && row < 20) {
+                        color = close_bg;
+                    } else { color = tb_col; }
+                } else {
                     color = tb_col;
-                    if (col >= ww - 28 && col < ww - 4 && row >= 6 && row < 22) {
-                        int cx = col - (ww - 28);
-                        if (cx >= 2 && cx < 22 && row >= 8 && row < 20)
-                            color = close_col;
-                    }
                 }
             } else {
                 if (win->buf) {
@@ -597,10 +604,24 @@ static void render_window(window_t *win) {
         }
     }
 
+    int cx = wx + ww - 16;
+    int cy = wy + 10;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 2; j++) {
+            int xx = cx + i * 3 + j;
+            int yy = cy + i * 3 + j;
+            if (xx >= wx + ww - 28 && xx < wx + ww - 4 && yy >= wy + 8 && yy < wy + 20)
+                draw_rect(back, xx, yy, 1, 1, close_x);
+            yy = cy + (8 - i * 3) + j;
+            if (xx >= wx + ww - 28 && xx < wx + ww - 4 && yy >= wy + 8 && yy < wy + 20)
+                draw_rect(back, xx, yy, 1, 1, close_x);
+        }
+    }
+
     int tx = wx + 10;
     int ty = wy + (TITLEBAR_H - 8) / 2;
     for (const char *p = win->title; *p; p++) {
-        comp_draw_char(back, tx, ty, *p, 0xFFFFFF);
+        comp_draw_char(back, tx, ty, *p, 0xCDD6F4);
         tx += 9;
     }
 
@@ -622,19 +643,39 @@ static void render_taskbar(void) {
     uint32_t *back = comp.back;
     int tb_y = comp.height - TASKBAR_H;
 
-    draw_rect(back, 0, tb_y, comp.width, TASKBAR_H, 0x11111B);
+    draw_rect(back, 0, tb_y, comp.width, TASKBAR_H, 0x0F0F17);
 
-    for (int x = 0; x < (int)comp.width; x++) {
+    for (int x = 0; x < (int)comp.width; x++)
         back[tb_y * comp.width + x] = 0x89B4FA;
-    }
 
     draw_rect(back, 0, tb_y, START_BUTTON_W, TASKBAR_H, 0x89B4FA);
-    comp_draw_string(back, 14, tb_y + (TASKBAR_H - 8) / 2, "Start", 0x11111B);
+    comp_draw_string(back, 14, tb_y + (TASKBAR_H - 8) / 2, "Start", 0x0F0F17);
+
+    int bx = START_BUTTON_W + 4;
+    int max_task_w = ((int)comp.width - START_BUTTON_W - 200) / 2;
+    if (max_task_w < 80) max_task_w = 80;
+    for (window_t *w = comp.windows; w && bx + max_task_w < (int)comp.width - 100; w = w->next) {
+        if (!w->visible) continue;
+        bool act = (w == comp.active);
+        draw_rect(back, bx, tb_y + 3, max_task_w, TASKBAR_H - 6, act ? 0x2E3045 : 0x1A1B28);
+        if (act)
+            draw_rect(back, bx, tb_y + 3, max_task_w, 2, 0x89B4FA);
+        int tl = 0;
+        for (int i = 0; w->title[i] && i < 16; i++) tl += 9;
+        if (tl > max_task_w - 12) tl = max_task_w - 12;
+        int tx = bx + (max_task_w - tl) / 2;
+        int ty = tb_y + (TASKBAR_H - 8) / 2;
+        for (const char *p = w->title; *p && tx + 9 < bx + max_task_w - 4; p++) {
+            comp_draw_char(back, tx, ty, *p, act ? 0xCDD6F4 : 0x6C7086);
+            tx += 9;
+        }
+        bx += max_task_w + 4;
+    }
 
     const char *label = "Raw Kernel";
     int lw = 0;
     for (const char *p = label; *p; p++) lw += 9;
-    int lx = ((int)comp.width - lw) / 2;
+    int lx = ((int)comp.width - lw - 10);
     int ly = tb_y + (TASKBAR_H - 8) / 2;
     for (const char *p = label; *p; p++) {
         comp_draw_char(back, lx, ly, *p, 0x585B70);
@@ -674,6 +715,22 @@ void comp_handle_click(void) {
     if (my >= tb_y && mx < START_BUTTON_W) {
         comp.start_menu_open = !comp.start_menu_open;
         return;
+    }
+
+    int bx = START_BUTTON_W + 4;
+    int max_task_w = ((int)comp.width - START_BUTTON_W - 200) / 2;
+    if (max_task_w < 80) max_task_w = 80;
+    if (my >= tb_y) {
+        for (window_t *w = comp.windows; w && bx + max_task_w < (int)comp.width - 100; w = w->next) {
+            if (!w->visible) continue;
+            if (mx >= bx && mx < bx + max_task_w && my >= tb_y + 3 && my < tb_y + TASKBAR_H - 3) {
+                window_raise(w);
+                comp.active = w;
+                return;
+            }
+            bx += max_task_w + 4;
+        }
+        comp.start_menu_open = false;
     }
 
     if (comp.start_menu_open) {
