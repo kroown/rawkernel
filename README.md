@@ -2,6 +2,10 @@
 
 x86-64 kernel · bios · c
 
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=c,linux">
+</p>
+
 a graphical desktop gui operating system for x86-64 bios, booting via limine.
 
 ## features
