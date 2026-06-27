@@ -86,8 +86,8 @@ void _start(void) {
     while (1) {
         mouse_packet_t mpkt;
         while (ps2_mouse_get(&mpkt)) {
-            int nx = comp.mouse_x + mpkt.dx / 4;
-            int ny = comp.mouse_y + mpkt.dy / 4;
+            int nx = comp.mouse_x + mpkt.dx / 3;
+            int ny = comp.mouse_y + mpkt.dy / 3;
             if (nx < 0) nx = 0;
             if (ny < 0) ny = 0;
             if (nx >= (int)comp.width) nx = (int)comp.width - 1;

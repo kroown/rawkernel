@@ -439,7 +439,7 @@ window_t *window_create(const char *title, int x, int y, int w, int h) {
 
     if (win->buf) {
         for (size_t i = 0; i < buf_size; i++)
-            win->buf[i] = 0xF0F0F0;
+            win->buf[i] = 0x1E1E2E;
     }
 
     win->next = comp.windows;
@@ -491,7 +491,7 @@ static void render_terminal_text(window_t *win) {
     if (!win->buf) return;
     int ww = win->width, wh = win->height;
     uint32_t bg = 0x0F0F0F;
-    uint32_t fg = 0x00FF00;
+    uint32_t fg = 0xA6E3A1;
     int pad_x = 8, pad_y = 6;
 
     for (int row = TITLEBAR_H; row < wh; row++) {
@@ -536,8 +536,8 @@ static void render_start_menu(void) {
     int sw = 220;
     int sh = 320;
 
-    draw_rect(back, sx, sy, sw, sh, 0x1E1E1E);
-    draw_outline_rounded(back, sx, sy, sw, sh, 3, 0x555555);
+    draw_rect(back, sx, sy, sw, sh, 0x11111B);
+    draw_outline_rounded(back, sx, sy, sw, sh, 3, 0x45475A);
 
     const char *items[] = { "Terminal", "About" };
     int n_items = 2;
@@ -545,9 +545,9 @@ static void render_start_menu(void) {
         int iy = sy + 8 + i * 36;
         int iw = sw - 16;
         int ix = sx + 8;
-        draw_rect(back, ix, iy, iw, 32, 0x2D2D2D);
-        draw_rect(back, ix, iy, iw, 32, 0x3C3C3C);
-        comp_draw_string(back, ix + 10, iy + 10, items[i], 0xEEEEEE);
+        draw_rect(back, ix, iy, iw, 32, 0x1E1E2E);
+        draw_rect(back, ix, iy, iw, 32, 0x313244);
+        comp_draw_string(back, ix + 10, iy + 10, items[i], 0xCDD6F4);
     }
 }
 
@@ -560,8 +560,8 @@ static void render_window(window_t *win) {
     uint32_t *back = comp.back;
     int wx = win->x, wy = win->y, ww = win->width, wh = win->height;
 
-    uint32_t tb_col = (win == comp.active) ? 0x2D5B9E : 0x3A3A3A;
-    uint32_t close_col = 0xCC3333;
+    uint32_t tb_col = (win == comp.active) ? 0x45475A : 0x302D41;
+    uint32_t close_col = 0xF38BA8;
     int r = 4;
 
     for (int row = 0; row < wh; row++) {
@@ -587,11 +587,11 @@ static void render_window(window_t *win) {
             } else {
                 if (win->buf) {
                     uint32_t bc = win->buf[row * ww + col];
-                    color = (bc == 0) ? 0xF0F0F0 : bc;
+                    color = (bc == 0) ? 0x1E1E2E : bc;
                 } else {
-                    color = 0xF0F0F0;
+                    color = 0x1E1E2E;
                 }
-                if (row == TITLEBAR_H) color = 0xCCCCCC;
+                if (row == TITLEBAR_H) color = 0x585B70;
             }
             back[py * comp.width + px] = color;
         }
@@ -604,18 +604,17 @@ static void render_window(window_t *win) {
         tx += 9;
     }
 
-    draw_outline_rounded(back, wx, wy, ww, wh, r, 0x444444);
+    draw_outline_rounded(back, wx, wy, ww, wh, r, 0x585B70);
 }
 
 static void render_desktop(void) {
     uint32_t *back = comp.back;
     for (uint64_t y = 0; y < comp.height - TASKBAR_H; y++) {
-        for (uint64_t x = 0; x < comp.width; x++) {
-            uint8_t r = (x * 255) / comp.width;
-            uint8_t g = (y * 255) / (comp.height - TASKBAR_H);
-            uint8_t b = ((x + y) * 200) / (comp.width + comp.height - TASKBAR_H);
-            back[y * comp.width + x] = (r << 16) | (g << 8) | (b + 55);
-        }
+        uint32_t h = (uint32_t)(comp.height - TASKBAR_H);
+        uint8_t t = (uint8_t)((y * 30) / h);
+        uint32_t color = (t << 16) | ((t/2) << 8) | (0x2E + t);
+        for (uint64_t x = 0; x < comp.width; x++)
+            back[y * comp.width + x] = color;
     }
 }
 
@@ -623,14 +622,14 @@ static void render_taskbar(void) {
     uint32_t *back = comp.back;
     int tb_y = comp.height - TASKBAR_H;
 
-    draw_rect(back, 0, tb_y, comp.width, TASKBAR_H, 0x2D2D2D);
+    draw_rect(back, 0, tb_y, comp.width, TASKBAR_H, 0x11111B);
 
     for (int x = 0; x < (int)comp.width; x++) {
-        back[tb_y * comp.width + x] = 0x444444;
+        back[tb_y * comp.width + x] = 0x89B4FA;
     }
 
-    draw_rect(back, 0, tb_y, START_BUTTON_W, TASKBAR_H, 0x2D5B9E);
-    comp_draw_string(back, 12, tb_y + (TASKBAR_H - 8) / 2, "Start", 0xFFFFFF);
+    draw_rect(back, 0, tb_y, START_BUTTON_W, TASKBAR_H, 0x89B4FA);
+    comp_draw_string(back, 14, tb_y + (TASKBAR_H - 8) / 2, "Start", 0x11111B);
 
     const char *label = "Raw Kernel";
     int lw = 0;
@@ -638,7 +637,7 @@ static void render_taskbar(void) {
     int lx = ((int)comp.width - lw) / 2;
     int ly = tb_y + (TASKBAR_H - 8) / 2;
     for (const char *p = label; *p; p++) {
-        comp_draw_char(back, lx, ly, *p, 0xAAAAAA);
+        comp_draw_char(back, lx, ly, *p, 0x585B70);
         lx += 9;
     }
 }
@@ -713,12 +712,10 @@ void comp_handle_click(void) {
                     window_t *abt = window_create("About Raw Kernel", 120, 100, 400, 200);
                     if (abt && abt->buf) {
                         comp.active = abt;
-                        for (size_t i = 0; i < (size_t)abt->width * abt->height; i++)
-                            abt->buf[i] = 0x1E1E1E;
-                        comp_draw_string(abt->buf, 20, 40, "Raw Kernel 0.1", 0x00FF00);
-                        comp_draw_string(abt->buf, 20, 56, "x86_64, BIOS, Limine", 0xAAAAAA);
-                        comp_draw_string(abt->buf, 20, 72, "Simple GUI compositor", 0xAAAAAA);
-                        comp_draw_string(abt->buf, 20, 88, "2016-2026", 0xAAAAAA);
+                        comp_draw_string(abt->buf, 20, 40, "Raw Kernel 0.1", 0xA6E3A1);
+                        comp_draw_string(abt->buf, 20, 56, "x86_64, BIOS, Limine", 0xA6ADC8);
+                        comp_draw_string(abt->buf, 20, 72, "Simple GUI compositor", 0xA6ADC8);
+                        comp_draw_string(abt->buf, 20, 88, "2016-2026", 0xA6ADC8);
                     }
                 }
                 return;
